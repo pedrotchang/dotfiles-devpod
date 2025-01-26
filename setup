@@ -4,8 +4,6 @@
 export XDG_CONFIG_HOME="$HOME"/.config
 mkdir -p "$XDG_CONFIG_HOME"
 
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
 # Create symlinks for existing configurations
 ln -sf "$PWD/nvim" "$XDG_CONFIG_HOME"/nvim
 ln -sf "$PWD/.tmux.conf" "$HOME"/.tmux.conf
@@ -15,26 +13,52 @@ curl -o "$HOME/.zshrc" https://raw.githubusercontent.com/pedrotchang/dotfiles/ma
 curl -o "$HOME/.zprofile" https://raw.githubusercontent.com/pedrotchang/dotfiles/main/.zprofile
 
 packages=(
-  fd
+  fd-find
   ripgrep
   npm
   lazygit
   fzf
   kubectl
-  fluxcd/tap/flux
+  fluxcd
   k9s
   kubectx
   direnv
   kubectl-cnpg
 )
 
+# Update package list
+sudo apt-get update
+
 # Iterate over the array and install each package
 for package in "${packages[@]}"; do
   echo "Installing $package..."
-  /home/linuxbrew/.linuxbrew/bin/brew install "$package"
+  
+  case "$package" in
+    "fluxcd")
+      # Install FluxCD
+      curl -s https://fluxcd.io/install.sh | sudo bash
+      ;;
+    "lazygit")
+      # Install LazyGit
+      sudo apt install -y lazygit
+      ;;
+    "k9s")
+      # Install K9s
+      curl -s https://github.com/derailed/k9s/releases/download/v0.32.7/k9s_Linux_arm64.tar.gz | tar xz -C /usr/local/bin
+      ;;
+    "kubectx")
+      # Install kubectx
+      curl -s https://github.com/ahmetb/kubectx/releases/download/v0.9.3/kubectx-linux-amd64 -o /usr/local/bin/kubectx && chmod +x /usr/local/bin/kubectx
+      ;;
+    "kubectl-cnpg")
+      # Assuming this is a custom package
+      echo "Please install kubectl-cnpg manually from its official source."
+      ;;
+    *)
+      sudo apt-get install -y "$package"
+      ;;
+  esac
 done
-
-echo "All packages have been installed."
 
 # Set up pure prompt
 
