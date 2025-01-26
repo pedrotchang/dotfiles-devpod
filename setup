@@ -12,39 +12,62 @@ ln -sf "$PWD/.tmux.conf" "$HOME"/.tmux.conf
 curl -o "$HOME/.zshrc" https://raw.githubusercontent.com/pedrotchang/dotfiles/main/.zshrc
 curl -o "$HOME/.zprofile" https://raw.githubusercontent.com/pedrotchang/dotfiles/main/.zprofile
 
+# Update package list
+sudo apt-get update
+
+# Install packages
 packages=(
-  fd
-  ripgrep
-  npm
-  lazygit
-  fzf
-  kubectl
-  fluxcd/tap/flux
-  k9s
-  kubectx
-  direnv
-  kubectl-cnpg
+    ripgrep
+    fd-find
+    nodejs
+    npm
+    fzf
+    direnv
 )
 
-# Iterate over the array and install each package
-for package in "${packages[@]}"; do
-  echo "Installing $package..."
-  /home/linuxbrew/.linuxbrew/bin/brew install "$package"
-done
+# Install Kubernetes related packages
+# Add Kubernetes apt repository
+curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-archive-keyring.gpg
+echo "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+sudo apt-get update
+sudo apt-get install -y kubectl
+
+# Install lazygit
+LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
+curl -Lo lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_arm64.tar.gz"
+tar xf lazygit.tar.gz lazygit
+sudo install lazygit /usr/local/bin
+rm lazygit lazygit.tar.gz
+
+# Install k9s
+K9S_VERSION=$(curl -s "https://api.github.com/repos/derailed/k9s/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
+curl -Lo k9s.tar.gz "https://github.com/derailed/k9s/releases/latest/download/k9s_Linux_arm64.tar.gz"
+tar xf k9s.tar.gz k9s
+sudo install k9s /usr/local/bin
+rm k9s k9s.tar.gz
+
+# Install kubectx and kubens
+sudo git clone https://github.com/ahmetb/kubectx /opt/kubectx
+sudo ln -s /opt/kubectx/kubectx /usr/local/bin/kubectx
+sudo ln -s /opt/kubectx/kubens /usr/local/bin/kubens
+
+# Install flux
+curl -s https://fluxcd.io/install.sh | sudo bash
+
+# Install CloudNativePG kubectl plugin
+curl -L https://github.com/cloudnative-pg/cloudnative-pg/releases/latest/download/kubectl-cnpg_linux_arm64.tar.gz | tar xz
+sudo install kubectl-cnpg /usr/local/bin/
 
 echo "All packages have been installed."
 
 # Set up pure prompt
-
 mkdir -p "$HOME/.zsh"
 git clone https://github.com/sindresorhus/pure.git "$HOME/.zsh/pure"
 
 # Silence source warning
-
 touch "$HOME/.privaterc"
 
 # Set up completions
-
 mkdir -p "$HOME/.zfunc"
 flux completion zsh > "$HOME/.zfunc/_flux"
 kubectl completion zsh > "$HOME/.zfunc/_kubectl"
