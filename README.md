@@ -1,10 +1,13 @@
 # Devpod Dotfiles
 
 Taken from [Mischa van den Burg](https://github.com/mischavandenburg/dotfiles-devpod)
-Slimmed-down dotfiles to use in Devpods
 
-## Markdown
+Slimmed-down dotfiles to use in Devpods.
 
-Currently not using the 80 character line width. It messes with X threads and LinkedIn posts.
+Not exactly 1:1 copy from Mischa, but close.
 
-To disable the markdownlint rule, create .markdownlint.yaml containing `MD013: false`.
+## Installation Using DevPod-CLI
+```
+devpod provider add github.com/pedrotchang/dotfiles-devpod
+devpod provider use github.com/pedrotchang/dotfiles-devpod
+
