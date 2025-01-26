@@ -45,9 +45,9 @@ touch "$HOME/.privaterc"
 
 # Set up completions
 
-midir -p "$HOME/.zfunc
-flux completion zsh > $HOME/.zfunc/_flux
-kubectl completion zsh > $HOME/.zfunc/_kubectl
-helm completion zsh > $HOME/.zfunc/_helm
+mkdir -p "$HOME/.zfunc"
+flux completion zsh > "$HOME/.zfunc/_flux"
+kubectl completion zsh > "$HOME/.zfunc/_kubectl"
+helm completion zsh > "$HOME/.zfunc/_helm"
 
 echo "Setup complete. Zsh configuration files have been downloaded and set up."
