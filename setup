@@ -1,124 +1,53 @@
 #!/bin/bash
 
-set -e  # Exit on error
-set -x  # Print commands being executed
-
 # Set up XDG_CONFIG_HOME
-export XDG_CONFIG_HOME="$HOME/.config"
+export XDG_CONFIG_HOME="$HOME"/.config
 mkdir -p "$XDG_CONFIG_HOME"
 
-# Install basic requirements with error handling
-install_system_packages() {
-   for pkg in "$@"; do
-       if ! dpkg -l | grep -q "^ii  $pkg "; then
-           sudo apt-get install -y "$pkg" || echo "Failed to install $pkg"
-       fi
-   done
-}
-
-# Base system update
-sudo apt-get update && sudo apt-get upgrade -y
-
-# Install system packages
-SYSTEM_PACKAGES=(
-   curl
-   git
-   zsh
-   wget
-   apt-transport-https
-   ca-certificates
-   gnupg
-)
-
-install_system_packages "${SYSTEM_PACKAGES[@]}"
-
-# Install neovim
-if ! command -v nvim &> /dev/null; then
-   curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim-linux64.tar.gz
-   sudo rm -rf /opt/nvim
-   sudo tar -C /opt -xzf nvim-linux64.tar.gz
-fi
-
-# Install ripgrep
-if ! command -v rg &> /dev/null; then
-   curl -LO https://github.com/BurntSushi/ripgrep/releases/download/13.0.0/ripgrep_13.0.0_amd64.deb
-   sudo dpkg -i ripgrep_13.0.0_amd64.deb
-   rm ripgrep_13.0.0_amd64.deb
-fi
-
-# Install fd-find
-if ! command -v fd &> /dev/null; then
-   curl -LO https://github.com/BurntSushi/ripgrep/releases/download/14.1.0/ripgrep_14.1.0-1_amd64.deb
-   sudo dpkg -i ripgrep_14.1.0-1_amd64.deb
-   rm ripgrep_14.1.0-1_amd64.deb
-fi
-
-# Install fzf
-if ! command -v fzf &> /dev/null; then
-   git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
-   ~/.fzf/install --all
-fi
-
-# Install kubectl
-if ! command -v kubectl &> /dev/null; then
-   curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/arm64/kubectl"
-   sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-fi
-
-# Install Flux
-if ! command -v flux &> /dev/null; then
-   curl -s https://fluxcd.io/install.sh | sudo bash
-fi
-
-# Install k9s
-if ! command -v k9s &> /dev/null; then
-   K9S_VERSION="v0.32.7"  # Update this version as needed
-   curl -Lo k9s.tar.gz "https://github.com/derailed/k9s/releases/download/${K9S_VERSION}/k9s_Linux_amd64.tar.gz"
-   tar xf k9s.tar.gz
-   sudo install k9s /usr/local/bin/
-   rm k9s k9s.tar.gz
-fi
-
-# Install kubectx
-if ! command -v kubectx &> /dev/null; then
-   KUBECTX_VERSION="v0.9.5"  # Update this version as needed
-   curl -Lo kubectx "https://github.com/ahmetb/kubectx/releases/download/${KUBECTX_VERSION}/kubectx"
-   chmod +x kubectx
-   sudo mv kubectx /usr/local/bin/
-fi
-
-# Create symlinks for configurations
+# Create symlinks for existing configurations
 ln -sf "$PWD/nvim" "$XDG_CONFIG_HOME"/nvim
 ln -sf "$PWD/.tmux.conf" "$HOME"/.tmux.conf
 
-# Fetch zsh configs
+# Fetch and set up Zsh configuration files from my main dotfiles repo
 curl -o "$HOME/.zshrc" https://raw.githubusercontent.com/pedrotchang/dotfiles/main/.zshrc
 curl -o "$HOME/.zprofile" https://raw.githubusercontent.com/pedrotchang/dotfiles/main/.zprofile
 
-# Set up pure prompt
-if [ ! -d "$HOME/.zsh/pure" ]; then
-   mkdir -p "$HOME/.zsh"
-   git clone https://github.com/sindresorhus/pure.git "$HOME/.zsh/pure"
-fi
+packages=(
+  fd
+  ripgrep
+  npm
+  lazygit
+  fzf
+  kubectl
+  fluxcd/tap/flux
+  k9s
+  kubectx
+  direnv
+  kubectl-cnpg
+)
 
-# Create .privaterc if it doesn't exist
+# Iterate over the array and install each package
+for package in "${packages[@]}"; do
+  echo "Installing $package..."
+  /home/linuxbrew/.linuxbrew/bin/brew install "$package"
+done
+
+echo "All packages have been installed."
+
+# Set up pure prompt
+
+mkdir -p "$HOME/.zsh"
+git clone https://github.com/sindresorhus/pure.git "$HOME/.zsh/pure"
+
+# Silence source warning
+
 touch "$HOME/.privaterc"
 
 # Set up completions
-mkdir -p "$HOME/.zfunc"
-if command -v flux &> /dev/null; then
-   flux completion zsh > "$HOME/.zfunc/_flux"
-fi
-if command -v kubectl &> /dev/null; then
-   kubectl completion zsh > "$HOME/.zfunc/_kubectl"
-fi
-if command -v helm &> /dev/null; then
-   helm completion zsh > "$HOME/.zfunc/_helm"
-fi
 
-# Change default shell to zsh
-if [ "$SHELL" != "/usr/bin/zsh" ]; then
-   sudo chsh -s $(which zsh) $USER
-fi
+midir -p "$HOME/.zfunc
+flux completion zsh > $HOME/.zfunc/_flux
+kubectl completion zsh > $HOME/.zfunc/_kubectl
+helm completion zsh > $HOME/.zfunc/_helm
 
-echo "Setup complete. Please start a new shell session for all changes to take effect."
+echo "Setup complete. Zsh configuration files have been downloaded and set up."
