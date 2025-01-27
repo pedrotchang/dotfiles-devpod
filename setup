@@ -1,79 +1,92 @@
 #!/bin/bash
 
+set -e  # Exit on error
+set -x  # Print commands being executed
+
 # Set up XDG_CONFIG_HOME
-export XDG_CONFIG_HOME="$HOME"/.config
+export XDG_CONFIG_HOME="$HOME/.config"
 mkdir -p "$XDG_CONFIG_HOME"
 
-# Create symlinks for existing configurations
+# Basic system update and essential packages
+sudo apt-get update && sudo apt-get install -y \
+    curl \
+    git \
+    zsh \
+    wget \
+    apt-transport-https \
+    ca-certificates \
+    gnupg \
+    fd-find \
+    ripgrep \
+    npm \
+    fzf \
+    direnv
+
+# Create symlinks for configurations
 ln -sf "$PWD/nvim" "$XDG_CONFIG_HOME"/nvim
 ln -sf "$PWD/.tmux.conf" "$HOME"/.tmux.conf
 
-# Fetch and set up Zsh configuration files from my main dotfiles repo
+# Fetch zsh configs
 curl -o "$HOME/.zshrc" https://raw.githubusercontent.com/pedrotchang/dotfiles/main/.zshrc
 curl -o "$HOME/.zprofile" https://raw.githubusercontent.com/pedrotchang/dotfiles/main/.zprofile
 
-packages=(
-  fd-find
-  ripgrep
-  npm
-  lazygit
-  fzf
-  kubectl
-  fluxcd
-  k9s
-  kubectx
-  direnv
-  kubectl-cnpg
-)
+# Install kubectl
+if ! command -v kubectl &> /dev/null; then
+    curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/kubernetes-archive-keyring.gpg
+    echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+    sudo apt-get update && sudo apt-get install -y kubectl
+fi
 
-# Update package list
-sudo apt-get update
+# Install lazygit
+if ! command -v lazygit &> /dev/null; then
+    LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
+    curl -Lo lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"
+    tar xf lazygit.tar.gz lazygit
+    sudo install lazygit /usr/local/bin
+    rm lazygit lazygit.tar.gz
+fi
 
-# Iterate over the array and install each package
-for package in "${packages[@]}"; do
-  echo "Installing $package..."
-  
-  case "$package" in
-    "fluxcd")
-      # Install FluxCD
-      curl -s https://fluxcd.io/install.sh | sudo bash
-      ;;
-    "lazygit")
-      # Install LazyGit
-      sudo apt install -y lazygit
-      ;;
-    "k9s")
-      # Install K9s
-      curl -s https://github.com/derailed/k9s/releases/download/v0.32.7/k9s_Linux_arm64.tar.gz | tar xz -C /usr/local/bin
-      ;;
-    "kubectx")
-      # Install kubectx
-      curl -s https://github.com/ahmetb/kubectx/releases/download/v0.9.3/kubectx-linux-amd64 -o /usr/local/bin/kubectx && chmod +x /usr/local/bin/kubectx
-      ;;
-    "kubectl-cnpg")
-      # Assuming this is a custom package
-      echo "Please install kubectl-cnpg manually from its official source."
-      ;;
-    *)
-      sudo apt-get install -y "$package"
-      ;;
-  esac
-done
+# Install Flux
+if ! command -v flux &> /dev/null; then
+    curl -s https://fluxcd.io/install.sh | sudo bash
+fi
+
+# Install k9s
+if ! command -v k9s &> /dev/null; then
+    K9S_VERSION="v0.32.7"  # Update this version as needed
+    curl -Lo k9s.tar.gz "https://github.com/derailed/k9s/releases/download/${K9S_VERSION}/k9s_Linux_amd64.tar.gz"
+    tar xf k9s.tar.gz
+    sudo install k9s /usr/local/bin/
+    rm k9s k9s.tar.gz
+fi
+
+# Install kubectx
+if ! command -v kubectx &> /dev/null; then
+    KUBECTX_VERSION="v0.9.5"  # Update this version as needed
+    curl -Lo kubectx "https://github.com/ahmetb/kubectx/releases/download/${KUBECTX_VERSION}/kubectx"
+    chmod +x kubectx
+    sudo mv kubectx /usr/local/bin/
+fi
 
 # Set up pure prompt
+if [ ! -d "$HOME/.zsh/pure" ]; then
+    mkdir -p "$HOME/.zsh"
+    git clone https://github.com/sindresorhus/pure.git "$HOME/.zsh/pure"
+fi
 
-mkdir -p "$HOME/.zsh"
-git clone https://github.com/sindresorhus/pure.git "$HOME/.zsh/pure"
-
-# Silence source warning
-
+# Create .privaterc if it doesn't exist
 touch "$HOME/.privaterc"
 
 # Set up completions
-
 mkdir -p "$HOME/.zfunc"
-flux completion zsh > "$HOME/.zfunc/_flux"
-kubectl completion zsh > "$HOME/.zfunc/_kubectl"
-helm completion zsh > "$HOME/.zfunc/_helm"
+if command -v flux &> /dev/null; then
+    flux completion zsh > "$HOME/.zfunc/_flux"
+fi
+if command -v kubectl &> /dev/null; then
+    kubectl completion zsh > "$HOME/.zfunc/_kubectl"
+fi
+if command -v helm &> /dev/null; then
+    helm completion zsh > "$HOME/.zfunc/_helm"
+fi
 
-echo "Setup complete. Zsh configuration files have been downloaded and set up."
+echo "Setup complete. Please start a new shell session for all changes to take effect."
