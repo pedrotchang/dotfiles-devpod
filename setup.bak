@@ -4,8 +4,6 @@
 export XDG_CONFIG_HOME="$HOME"/.config
 mkdir -p "$XDG_CONFIG_HOME"
 
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
 # Create symlinks for existing configurations
 ln -sf "$PWD/nvim" "$XDG_CONFIG_HOME"/nvim
 ln -sf "$PWD/.tmux.conf" "$HOME"/.tmux.conf
@@ -47,9 +45,9 @@ touch "$HOME/.privaterc"
 
 # Set up completions
 
-mkdir -p "$HOME/.zfunc"
-flux completion zsh > "$HOME/.zfunc/_flux"
-kubectl completion zsh > "$HOME/.zfunc/_kubectl"
-helm completion zsh > "$HOME/.zfunc/_helm"
+midir -p "$HOME/.zfunc
+flux completion zsh > $HOME/.zfunc/_flux
+kubectl completion zsh > $HOME/.zfunc/_kubectl
+helm completion zsh > $HOME/.zfunc/_helm
 
 echo "Setup complete. Zsh configuration files have been downloaded and set up."

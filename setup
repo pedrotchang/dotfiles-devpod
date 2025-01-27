@@ -1,53 +1,25 @@
-#!/bin/bash
+#!/bin/sh
 
-# Set up XDG_CONFIG_HOME
-export XDG_CONFIG_HOME="$HOME"/.config
-mkdir -p "$XDG_CONFIG_HOME"
+# install additional software packages using apt (keep it at minimum)
+sudo apt update && \
+	sudo apt install exa bat ripgrep stow -y
 
-# Create symlinks for existing configurations
-ln -sf "$PWD/nvim" "$XDG_CONFIG_HOME"/nvim
-ln -sf "$PWD/.tmux.conf" "$HOME"/.tmux.conf
+# stow the config file from dotfiles into the container
+cd ~/dotfiles
+rm -rf .git
 
-# Fetch and set up Zsh configuration files from my main dotfiles repo
-curl -o "$HOME/.zshrc" https://raw.githubusercontent.com/pedrotchang/dotfiles/main/.zshrc
-curl -o "$HOME/.zprofile" https://raw.githubusercontent.com/pedrotchang/dotfiles/main/.zprofile
+stow -t ~/ nvim
 
-packages=(
-  fd
-  ripgrep
-  npm
-  lazygit
-  fzf
-  kubectl
-  fluxcd/tap/flux
-  k9s
-  kubectx
-  direnv
-  kubectl-cnpg
-)
+rm ~/.zshrc
+cp -v zsh/.zshrc ~/.zshrc.bak
+stow -t ~/ zsh
 
-# Iterate over the array and install each package
-for package in "${packages[@]}"; do
-  echo "Installing $package..."
-  /home/linuxbrew/.linuxbrew/bin/brew install "$package"
-done
+# install fzf manually (throws error when installed through binary)
+git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
+~/.fzf/install --key-bindings --completion --no-update-rc --no-bash --no-fish
+echo "export FZF_HOME=~/.fzf" >> ~/.zshrc
+echo "export PATH=\$FZF_HOME/bin:\$PATH" >> ~/.zshrc
+echo "[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh \n" >> ~/.zshrc
 
-echo "All packages have been installed."
-
-# Set up pure prompt
-
-mkdir -p "$HOME/.zsh"
-git clone https://github.com/sindresorhus/pure.git "$HOME/.zsh/pure"
-
-# Silence source warning
-
-touch "$HOME/.privaterc"
-
-# Set up completions
-
-midir -p "$HOME/.zfunc
-flux completion zsh > $HOME/.zfunc/_flux
-kubectl completion zsh > $HOME/.zfunc/_kubectl
-helm completion zsh > $HOME/.zfunc/_helm
-
-echo "Setup complete. Zsh configuration files have been downloaded and set up."
+# switch to zsh
+echo "zsh" >> ~/.bashrc
