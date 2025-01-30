@@ -1,4 +1,4 @@
-print("Zettelkasten file loaded!")
+-- Taken from mischavandenburg, and rewritten for fitting my needs
 local function create_and_open_sb_note()
   -- Get the current line
   local line = vim.api.nvim_get_current_line()
@@ -7,11 +7,11 @@ local function create_and_open_sb_note()
   local title = line:match("%[%[(.-)%]%]")
 
   if title then
-    -- Construct and execute the sb command
-    local cmd = string.format('sb new --vim "%s"', title)
+    -- Use the full path to sb
+    local cmd = string.format('/Users/seyza/.asdf/shims/sb new --vim "%s"', title)
     local output = vim.fn.system(cmd)
 
-    -- Extract the file path from the output and clean it
+    -- Rest of your function remains the same
     local file_path = output:match("New note created: (.+)")
     if file_path then
       -- Remove null bytes, newlines, and trim whitespace
@@ -36,10 +36,10 @@ local function create_and_open_sb_note()
 end
 
 -- Create a Vim command to call this function
-vim.api.nvim_create_user_command("CreateAndOpensbNote", create_and_open_sb_note, {})
+vim.api.nvim_create_user_command("CreateAndOpenSbNote", create_and_open_sb_note, {})
 
 -- Optional: Add a key mapping
-vim.keymap.set("n", "<leader>zz", ":CreateAndOpensbNote<CR>", { desc = "Create and open zn note" })
+vim.keymap.set("n", "<leader>sb", ":CreateAndOpenSbNote<CR>", { desc = "Create and open sb note" })
 
 local function yank_and_search_markdown_link()
   vim.cmd("normal! yi]")
@@ -67,7 +67,7 @@ vim.api.nvim_create_user_command("YankAndSearchMarkdownLink", yank_and_search_ma
 
 vim.keymap.set(
   "n",
-  "<leader>so",
+  "<leader>zo",
   ":YankAndSearchMarkdownLink<CR>",
-  { desc = "Sb Open - Yank and search markdown link" }
+  { desc = "Zet Open - Yank and search markdown link" }
 )
